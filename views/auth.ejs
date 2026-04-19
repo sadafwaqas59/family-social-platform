@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Auth</title>
+</head>
+<body>
+
+<h2>Signup</h2>
+
+<form method="POST" action="/signup">
+  <input type="text" name="name" placeholder="Name" required />
+  <!-- input for user name -->
+  <input type="email" name="email" placeholder="Email" required />
+  <!-- input for email -->
+  <input type="password" name="password" placeholder="Password" required />
+  <!-- input for password -->
+<br></br>
+  <button type="submit">Submit</button>
+  <!-- submit signup form -->
+</form>
+
+
+
+<h2>Already Have Account!</h2>
+<form method="POST" action="/login">
+  <input type="email" name="email" placeholder="Email" required />
+  <!-- login email -->
+
+  <input type="password" name="password" placeholder="Password" required />
+  <!-- login password -->
+<br></br>
+  <button type="submit">Login</button>
+  <!-- submit login form -->
+</form>
+
+</body>
+</html>
