@@ -18,11 +18,19 @@ const userSchema = new mongoose.Schema({
   password: {
     type: String,
     required: true
-  } 
+  }, 
   // store hashed password (not plain text)
 
+  familyId: {
+    type: mongoose.Schema.Types.ObjectId,
+    relation: "relation",
+    default: null
+  } 
+  // link user to a family (null if not joined)
+
 }, { timestamps: true }); 
-// automatically adds createdAt & updatedAt
+// adds createdAt & updatedAt automatically
+
 
 export default mongoose.model("User", userSchema); 
-// export model to use in routes
+// export model

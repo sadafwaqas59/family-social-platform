@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<h2>Family Members Page</h2> <!-- title -->
+
+<h3>Family members </h3>
+<form method="POST" action="/family/id">
+  <input name="name" placeholder="Family Name" /> <!-- family name -->
+  <button>Create</button>
+</form>
+
+<h3>Add Member relation</h3>
+<form method="POST" action="/family/add relation">
+  <input name="email" placeholder="Member Email" /> <!-- email -->
+  <button>Add</button>
+</form>
+
+<h3>Members</h3>
+
+<% if (family) { %>
+  <% family.members.forEach(member => { %>
+    <p><%= member.name %> - <%= member.email %></p> <!-- show members -->
+  <% }) %>
+<% } %>
+
+</body>
+</html>

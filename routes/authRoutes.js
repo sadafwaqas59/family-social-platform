@@ -4,57 +4,44 @@ import User from "../models/User.js";
 
 const router = express.Router();
 
-// SIGNUP
+// 🟢 AUTH PAGE (login + signup)
+router.get("/auth", (req, res) => {
+  res.render("auth"); // show auth page
+});
+
+// 🟢 SIGNUP
 router.post("/signup", async (req, res) => {
-  try {
-    const { name, email, password } = req.body;
+  const { name, email, password } = req.body; // form data
 
-    // check existing user
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.send("User already exists");
-    }
+  const exists = await User.findOne({ email }); // check user exists
+  if (exists) return res.send("User already exists");
 
-    // hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+  const hash = await bcrypt.hash(password, 10); // hash password
 
-    // create user
-    const user = await User.create({
-      name,
-      email,
-      password: hashedPassword
-    });
+  await User.create({ name, email, password: hash }); // save user
 
-    res.send("Signup successful");
-  } catch (err) {
-    console.log(err);
-    res.send("Error");
-  }
+  res.redirect("/auth"); // back to login
 });
 
-// LOGIN
+// 🟢 LOGIN
 router.post("/login", async (req, res) => {
-  try {
-    const { email, password } = req.body;
+  const { email, password } = req.body; // login data
 
-    const user = await User.findOne({ email });
-    if (!user) return res.send("User not found");
+  const user = await User.findOne({ email }); // find user
+  if (!user) return res.send("User not found");
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.send("Wrong password");
+  const match = await bcrypt.compare(password, user.password); // check password
+  if (!match) return res.send("Wrong password");
 
-    // save user in session
-    req.session.userId = user._id;
+  req.session.userId = user._id; // save session
 
-    res.send("Login successful");
-  } catch (err) {
-    console.log(err);
-    res.send("Error");
-  }
+  res.redirect("/feed"); // ✅ FIXED: go to main app
 });
-router.get("/", (req, res) => {
-  res.render("auth"); 
-  // render single auth page
+
+// 🟢 LOGOUT
+router.get("/logout", (req, res) => {
+  req.session.destroy(); // clear session
+  res.redirect("/auth"); // back to login
 });
 
 export default router;
