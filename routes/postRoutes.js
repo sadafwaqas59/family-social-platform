@@ -1,94 +1,90 @@
-import express from "express";
-import Post from "../models/Post.js";
-import Family from "../models/Family.js";
+import express from "express"; // router
+import Post from "../models/Post.js"; // post model
+import Family from "../models/Family.js"; // family model
+import multer from "multer"; // image upload
+import path from "path"; // file path
 
-import multer from "multer";
-import path from "path";
+const router = express.Router(); // init router
 
-const router = express.Router();
-
-// 🖼 multer config
+// MULTER CONFIG (image upload setup)
 const storage = multer.diskStorage({
-  destination: "./public/uploads/", // folder
+  destination: "./public/uploads/", // save images here
   filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname)); // unique name
+    cb(null, Date.now() + path.extname(file.originalname)); // unique filename
   }
 });
 
-const upload = multer({ storage });
-
-// ✍️ CREATE POST
-router.post("/post/create", upload.single("image"), async (req, res) => {
-  const userId = req.session.userId; // logged user
-  if (!userId) return res.redirect("/login");
-
-  const family = await Family.findOne({ members: userId }); // find family
-  if (!family) return res.send("No family found");
-
-  await Post.create({
-    userId,
-    familyId: family._id,
-    content: req.body.content,
-    image: req.file ? "/uploads/" + req.file.filename : null // save image
-  });
-
-  res.redirect("/feed");
+const upload = multer({
+  storage,
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith("image")) cb(null, true); // allow only images
+    else cb("Only images allowed!", false);
+  }
 });
 
-// ❤️ LIKE / UNLIKE
+// CREATE POST (text + image)
+router.post("/post/create", upload.single("image"), async (req, res) => {
+  const userId = req.session.userId; // logged user
+
+  if (!userId) return res.redirect("/auth"); // protect route
+
+  
+  await Post.create({
+  userId,
+    content: req.body.content,
+    image: req.file ? "/uploads/" + req.file.filename : null, // save image path
+    likes: [],
+    comments: []
+  });
+
+  res.redirect("/feed"); // go feed
+});
+
+//  LIKE POST
 router.get("/post/like/:id", async (req, res) => {
-  const userId = req.session.userId; // current user
-  if (!userId) return res.redirect("/login");
+  const userId = req.session.userId; // user
+
+  if (!userId) return res.redirect("/auth"); // protect
 
   const post = await Post.findById(req.params.id); // find post
-  if (!post) return res.send("Post not found");
 
-  const index = post.likes.indexOf(userId); // check like
-
-  if (index === -1) {
-    post.likes.push(userId); // like
-  } else {
-    post.likes.splice(index, 1); // unlike
+  if (!post.likes.includes(userId)) {
+    post.likes.push(userId); // add like
   }
 
   await post.save(); // save
 
-  res.redirect("/feed");
+  res.redirect("/feed"); // reload
 });
 
-// 💬 ADD COMMENT
+//  ADD COMMENT
 router.post("/post/comment/:id", async (req, res) => {
-  const userId = req.session.userId; // current user
-  if (!userId) return res.redirect("/login");
+  const userId = req.session.userId; // user
+
+  if (!userId) return res.redirect("/auth"); // protect
 
   const post = await Post.findById(req.params.id); // find post
-  if (!post) return res.send("Post not found");
 
   post.comments.push({
     userId,
-    text: req.body.text // comment text
-  });
+    text: req.body.text
+  }); // add comment
 
   await post.save(); // save
 
-  res.redirect("/feed");
+  res.redirect("/feed"); // reload
 });
-
-// 📥 FEED
+// FEED
 router.get("/feed", async (req, res) => {
-  const userId = req.session.userId; // current user
-  if (!userId) return res.redirect("/login");
+  const userId = req.session.userId;
 
-  const family = await Family.findOne({ members: userId }); // find family
-  if (!family) return res.send("Create or join a family first");
+  if (!userId) return res.redirect("/auth");
 
-  const posts = await Post.find({
-    familyId: family._id
-  })
-    .populate("userId") // post user
-    .populate("comments.userId"); // comment user
+  const posts = await Post.find()
+    .populate("userId")
+    .populate("comments.userId")
+    .sort({ _id: -1 });
 
-  res.render("feed", { posts }); // render page
+  res.render("feed", { posts });
 });
-
-export default router;
+export default router; // export

@@ -22,7 +22,7 @@ app.use(session({
 }));
 
 //  enable static files (images, css, uploads)
-app.use(express.static("public"));
+app.use(express.static("public"));// serve images
 
 //  enable EJS
 app.set("view engine", "ejs");
@@ -32,7 +32,6 @@ app.set("views", "./views");
 app.use("/", authRoutes);
 app.use("/", familyRoutes);
 app.use("/", postRoutes);
-
 //  start server
 app.listen(4000, () => {
   console.log("Server running on port 4000");
