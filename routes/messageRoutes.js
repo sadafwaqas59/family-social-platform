@@ -1,51 +1,116 @@
-import express from "express"; // import express
-import Message from "../models/Message.js"; // import message model
-import User from "../models/User.js"; // import user model
+import express from "express";
+import multer from "multer";
+import Conversation from "../models/Conversation.js";
+import Message from "../models/Message.js";
+import Typing from "../models/Typing.js";
 
-const router = express.Router(); // create router
+const router = express.Router();
 
-
-//  SEND MESSAGE 
-router.post("/message/send/:id", async (req, res) => { // send message route
-  const senderId = req.session.userId; // logged-in user
-  const receiverId = req.params.id; // receiver user id
-
-  if (!senderId) return res.redirect("/auth"); // protect route
-
-  const sender = await User.findById(senderId); // get sender
-  const receiver = await User.findById(receiverId); // get receiver
-
-  if (sender.familyId.toString() !== receiver.familyId.toString()) { // check same family
-    return res.send("Not allowed "); // block if different family
+// Multer (image upload) 
+const storage = multer.diskStorage({
+  destination: "./public/uploads/",
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + "-" + file.originalname);
   }
+});
+const upload = multer({ storage });
 
-  await Message.create({ // create message
-    senderId,
-    receiverId,
-    text: req.body.text
+//  Create / Get Conversation
+router.post("/conversation", async (req, res) => {
+  const { senderId, receiverId } = req.body;
+
+  let convo = await Conversation.findOne({
+    members: { $all: [senderId, receiverId] }
   });
 
-  res.redirect("/chat/" + receiverId); // redirect to chat
+  if (!convo) {
+    convo = new Conversation({ members: [senderId, receiverId] });
+    await convo.save();
+  }
+
+  res.json(convo);
 });
 
+// Send Message 
+router.post("/send", upload.single("image"), async (req, res) => {
+  const { conversationId, sender, text, replyTo } = req.body;
 
-// CHAT PAGE 
-router.get("/chat/:id", async (req, res) => { // open chat route
-  const userId = req.session.userId; // logged-in user
-  const otherUserId = req.params.id; // other user
+  const msg = new Message({
+    conversationId,
+    sender,
+    text,
+    replyTo,
+    image: req.file ? req.file.filename : null
+  });
 
-  if (!userId) return res.redirect("/auth"); // protect route
+  await msg.save();
 
-  const messages = await Message.find({ // get messages
-    $or: [
-      { senderId: userId, receiverId: otherUserId }, // sent messages
-      { senderId: otherUserId, receiverId: userId } // received messages
-    ]
-  }).sort({ createdAt: 1 }); // sort by time
+  await Conversation.findByIdAndUpdate(conversationId, {
+    lastMessage: text || "📷 Image",
+    updatedAt: Date.now()
+  });
 
-  const otherUser = await User.findById(otherUserId); // get other user info
-
-  res.render("chat", { messages, otherUser }); // render chat page
+  res.json(msg);
 });
 
-export default router; // export router
+// Get Messages 
+router.get("/:conversationId", async (req, res) => {
+  const messages = await Message.find({
+    conversationId: req.params.conversationId
+  })
+    .populate("sender", "name profilePic") // get sender name + image
+    .populate({
+      path: "replyTo",
+      populate: { path: "sender", select: "name" } // reply sender name
+    })
+    .sort({ createdAt: 1 });
+
+  res.json(messages);
+});
+
+//  Delete Message
+router.delete("/:messageId", async (req, res) => {
+  await Message.findByIdAndUpdate(req.params.messageId, {
+    deleted: true
+  });
+
+  res.json({ message: "Deleted" });
+});
+
+//  Mark Seen
+router.put("/seen/:conversationId/:userId", async (req, res) => {
+  await Message.updateMany(
+    {
+      conversationId: req.params.conversationId,
+      sender: { $ne: req.params.userId }
+    },
+    { seen: true }
+  );
+
+  res.json({ message: "Seen updated" });
+});
+
+//  Typing 
+router.post("/typing", async (req, res) => {
+  const { conversationId, userId, isTyping } = req.body;
+
+  await Typing.findOneAndUpdate(
+    { conversationId, userId },
+    { isTyping, updatedAt: Date.now() },
+    { upsert: true }
+  );
+
+  res.json({ status: "typing" });
+});
+
+//  Get Typing 
+router.get("/typing/:conversationId", async (req, res) => {
+  const users = await Typing.find({
+    conversationId: req.params.conversationId,
+    isTyping: true
+  });
+
+  res.json(users);
+});
+
+export default router;

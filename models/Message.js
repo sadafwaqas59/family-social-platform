@@ -1,10 +1,16 @@
-import mongoose from "mongoose"; // import mongoose
+import mongoose from "mongoose";
 
-const messageSchema = new mongoose.Schema({ // define schema
-  senderId: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, // sender user
-  receiverId: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, // receiver user
-  text: String, // message text
-  createdAt: { type: Date, default: Date.now } // timestamp
+// message schema (full features)
+const messageSchema = new mongoose.Schema({
+  conversationId: { type: mongoose.Schema.Types.ObjectId, ref: "Conversation" }, // chat id
+  sender: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, // sender
+  text: String, // text message
+  image: String, // image path
+  seen: { type: Boolean, default: false }, // seen ✔✔
+  replyTo: { type: mongoose.Schema.Types.ObjectId, ref: "Message" }, // reply
+  deleted: { type: Boolean, default: false }, // delete flag
+  createdAt: { type: Date, default: Date.now } // time
 });
 
-export default mongoose.model("Message", messageSchema); // export model
+
+export default mongoose.model("Message", messageSchema);

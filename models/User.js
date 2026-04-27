@@ -21,6 +21,7 @@ const userSchema = new mongoose.Schema({
   }, 
   // store hashed password (not plain text)
 
+profilePic: String, // image filename
   familyId: {
     type: mongoose.Schema.Types.ObjectId,
     relation: "relation",
