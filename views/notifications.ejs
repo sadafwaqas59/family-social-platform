@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Notifications</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"> <!-- bootstrap -->
+</head>
+
+<body class="container mt-4"> <!-- container -->
+
+<h2>🔔 Notifications</h2> <!-- heading -->
+
+<ul class="list-group mt-3">
+  <% notifications.forEach(n => { %> <!-- loop -->
+
+  <li class="list-group-item d-flex justify-content-between 
+    <%= n.isRead ? '' : 'list-group-item-warning' %>"> <!-- highlight unread -->
+
+    <div>
+      <%= n.message %><br> <!-- show message -->
+      <small><%= n.createdAt.toDateString() %></small> <!-- show date -->
+    </div>
+
+    <% if (!n.isRead) { %> <!-- if unread -->
+      <form action="/notifications/read/<%= n._id %>" method="POST">
+        <button class="btn btn-success btn-sm">Mark Read</button> <!-- button -->
+      </form>
+    <% } %>
+
+  </li>
+
+  <% }) %>
+</ul>
+
+</body>
+</html>

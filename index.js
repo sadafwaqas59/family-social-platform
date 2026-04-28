@@ -6,6 +6,7 @@ import authRoutes from "./routes/authRoutes.js";
 import familyRoutes from "./routes/familyRoutes.js";
 import postRoutes from "./routes/postRoutes.js";
 import messageRoutes from "./routes/messageRoutes.js";
+import notificationRoutes from "./routes/notificationRoutes.js"; // import routes
 
 const app = express();
 
@@ -35,6 +36,7 @@ app.set("views", "./views");
 app.use("/", authRoutes);
 app.use("/", familyRoutes);
 app.use("/", postRoutes);
+app.use("/notifications", notificationRoutes); // use route
 //  start server
 app.listen(4000, () => {
   console.log("Server running on port 4000");
