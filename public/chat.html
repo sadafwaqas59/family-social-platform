@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Messenger UI</title>
+
+  <style>
+    body {
+      font-family: Arial;
+      background: #f0f2f5;
+    }
+
+    .chat-container {
+      width: 400px;
+      margin: 20px auto;
+      background: #fff;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      height: 600px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    .chat-header {
+      padding: 10px;
+      background: #0084ff;
+      color: white;
+      font-weight: bold;
+      border-radius: 10px 10px 0 0;
+    }
+.message img {
+  object-fit: cover;
+}
+    .chat-box {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .message {
+      max-width: 70%;
+      padding: 8px 12px;
+      margin: 5px 0;
+      border-radius: 15px;
+      font-size: 14px;
+    }
+
+    .sent {
+      align-self: flex-end;
+      background: #0084ff;
+      color: white;
+    }
+
+    .received {
+      align-self: flex-start;
+      background: #e4e6eb;
+    }
+
+    .reply {
+      font-size: 11px;
+      color: gray;
+    }
+
+    .chat-input {
+      display: flex;
+      padding: 10px;
+      border-top: 1px solid #ccc;
+    }
+
+    .chat-input input[type="text"] {
+      flex: 1;
+      padding: 8px;
+      border-radius: 20px;
+      border: 1px solid #ccc;
+    }
+
+    .chat-input button {
+      margin-left: 5px;
+      padding: 8px 12px;
+      border: none;
+      background: #0084ff;
+      color: white;
+      border-radius: 20px;
+      cursor: pointer;
+    }
+
+    img {
+      margin-top: 5px;
+      border-radius: 10px;
+    }
+
+    #typing {
+      font-size: 12px;
+      color: gray;
+      padding-left: 10px;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="chat-container">
+
+  <div class="chat-header">Chat</div>
+
+  <div id="chat" class="chat-box"></div>
+  <div id="typing"></div>
+
+  <div class="chat-input">
+    <input type="text" id="text" placeholder="Type a message..."
+      oninput="typing(true)" onblur="typing(false)">
+    <input type="file" id="image">
+    <button onclick="sendMessage()">Send</button>
+  </div>
+
+</div>
+
+<script>
+const conversationId = "YOUR_CONVO_ID";
+const userId = "YOUR_USER_ID";
+let replyTo = null;
+
+// load messages
+async function loadMessages() {
+  const res = await fetch(`/messages/${conversationId}`);
+  const data = await res.json();
+
+  const chat = document.getElementById("chat");
+  chat.innerHTML = "";
+
+  data.forEach(msg => {
+    const div = document.createElement("div");
+
+    div.className = "message " + (msg.sender === userId ? "sent" : "received");
+
+    let content = "";
+
+    if (msg.deleted) {
+      content = "<i>Message deleted</i>";
+    } else {
+      if (msg.replyTo) {
+        content += `<div class="reply">Reply: ${msg.replyTo.text || "Image"}</div>`;
+      }
+
+      content += msg.text || "";
+
+      if (msg.image) {
+        content += `<br><img src="/uploads/${msg.image}" width="120">`;
+      }
+
+      content += "<br>" + (msg.seen ? "✔✔" : "✔");
+
+      content += `<br>
+        <button onclick="setReply('${msg._id}')">↩</button>
+        <button onclick="deleteMsg('${msg._id}')">🗑</button>`;
+    }
+
+    div.innerHTML = content;
+    chat.appendChild(div);
+  });
+
+  chat.scrollTop = chat.scrollHeight;
+}
+
+// send message
+async function sendMessage() {
+  const text = document.getElementById("text").value;
+  const image = document.getElementById("image").files[0];
+
+  const formData = new FormData();
+  formData.append("conversationId", conversationId);
+  formData.append("sender", userId);
+  formData.append("text", text);
+  if (replyTo) formData.append("replyTo", replyTo);
+  if (image) formData.append("image", image);
+
+  await fetch("/messages/send", {
+    method: "POST",
+    body: formData
+  });
+
+  document.getElementById("text").value = "";
+  replyTo = null;
+
+  loadMessages();
+}
+
+// reply
+function setReply(id) {
+  replyTo = id;
+}
+
+// delete
+async function deleteMsg(id) {
+  await fetch(`/messages/${id}`, { method: "DELETE" });
+  loadMessages();
+}
+
+// typing
+async function typing(status) {
+  await fetch("/messages/typing", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ conversationId, userId, isTyping: status })
+  });
+}
+
+// load typing
+async function loadTyping() {
+  const res = await fetch(`/messages/typing/${conversationId}`);
+  const data = await res.json();
+
+  document.getElementById("typing").innerText =
+    data.length ? "Typing..." : "";
+}
+
+// auto refresh
+setInterval(() => {
+  loadMessages();
+  loadTyping();
+}, 2000);
+
+loadMessages();
+</script>
+data.forEach(msg => {
+  const div = document.createElement("div");
+
+  const isMe = msg.sender._id === userId;
+
+  div.className = "message " + (isMe ? "sent" : "received");
+
+  let content = "";
+
+  if (msg.deleted) {
+    content = "<i>Message deleted</i>";
+  } else {
+
+    // 👤 profile pic + name (only for received messages)
+    if (!isMe) {
+      content += `
+        <div style="display:flex; align-items:center; gap:5px;">
+          <img src="/uploads/${msg.sender.profilePic || 'default.png'}"
+               width="30" height="30" style="border-radius:50%">
+          <b>${msg.sender.name}</b>
+        </div>
+      `;
+    }
+
+    // 🔁 reply preview
+    if (msg.replyTo) {
+      content += `
+        <div style="font-size:11px;color:gray;margin-left:35px;">
+          Reply to: ${msg.replyTo.text || "Image"}
+        </div>
+      `;
+    }
+
+    // 💬 message text
+    content += msg.text || "";
+
+    // 📷 image
+    if (msg.image) {
+      content += `<br><img src="/uploads/${msg.image}" width="120">`;
+    }
+
+    // ✔ seen
+    content += "<br>" + (msg.seen ? "✔✔" : "✔");
+
+    // buttons
+    content += `<br>
+      <button onclick="setReply('${msg._id}')">↩</button>
+      <button onclick="deleteMsg('${msg._id}')">🗑</button>`;
+  }
+
+  div.innerHTML = content;
+  chat.appendChild(div);
+});
+</body>
+</html>

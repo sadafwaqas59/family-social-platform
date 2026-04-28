@@ -78,19 +78,19 @@ router.post("/post/comment/:id", familyOnly, async (req, res) => {
 });
 
 //  FEED
-router.get("/feed", async (req, res) => {
+router.get("/feed", async (req, res) => { //This route fetches and displays posts
   const userId = req.session.userId; // user
 
   if (!userId) return res.redirect("/auth"); // protect
 
   const user = await User.findById(userId); // get user
 
-  const posts = await Post.find({ familyId: user.familyId }) // only family posts
+  const posts = await Post.find({ familyId: user.familyId }) // only family posts(privacy)
     .populate("userId")
     .populate("comments.userId")
     .sort({ _id: -1 });
 
-  res.render("feed", { posts }); // render feed
+  res.render("feed", { posts }); // render feed( Sends data to frontend (EJS page) to display posts)
 });
 
 export default router; // export router

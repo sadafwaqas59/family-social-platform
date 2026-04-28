@@ -5,6 +5,8 @@ import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
 import familyRoutes from "./routes/familyRoutes.js";
 import postRoutes from "./routes/postRoutes.js";
+import messageRoutes from "./routes/messageRoutes.js";
+import notificationRoutes from "./routes/notificationRoutes.js"; // import routes
 
 const app = express();
 
@@ -23,6 +25,8 @@ app.use(session({
 
 //  enable static files (images, css, uploads)
 app.use(express.static("public"));// serve images
+app.use("/uploads", express.static("public/uploads")); // serve images
+app.use("/messages", messageRoutes);
 
 //  enable EJS
 app.set("view engine", "ejs");
@@ -32,6 +36,7 @@ app.set("views", "./views");
 app.use("/", authRoutes);
 app.use("/", familyRoutes);
 app.use("/", postRoutes);
+app.use("/notifications", notificationRoutes); // use route
 //  start server
 app.listen(4000, () => {
   console.log("Server running on port 4000");
