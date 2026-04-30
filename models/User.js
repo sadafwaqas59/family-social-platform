@@ -6,32 +6,33 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true
   }, 
-  // store user name (required)
+  // user name (required)
 
   email: {
     type: String,
     required: true,
     unique: true
   }, 
-  // store unique email (no duplicates allowed)
+  // unique email
 
   password: {
     type: String,
     required: true
   }, 
-  // store hashed password (not plain text)
+  // hashed password
 
-profilePic: String, // image filename
+  profilePic: String, 
+  // profile image filename
+
   familyId: {
     type: mongoose.Schema.Types.ObjectId,
-    relation: "relation",
+    ref: "Family", // correct way to link collections
     default: null
   } 
-  // link user to a family (null if not joined)
+  // user belongs to a family (or null)
 
 }, { timestamps: true }); 
-// adds createdAt & updatedAt automatically
-
+// auto adds createdAt & updatedAt
 
 export default mongoose.model("User", userSchema); 
-// export model
+// export user model

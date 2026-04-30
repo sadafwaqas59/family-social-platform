@@ -1,6 +1,7 @@
+import "./config/env.js";
 import express from "express"; //  import express framework
 import session from "express-session"; //  import session for login system
-import dotenv from "dotenv"; //  import dotenv for env variables and for Mailgun keys
+
 import connectDB from "./config/db.js"; //  import database connection
 
 import authRoutes from "./routes/authRoutes.js"; //  auth routes (login/signup)
@@ -10,7 +11,7 @@ import messageRoutes from "./routes/messageRoutes.js"; //  messaging module
 import notificationRoutes from "./routes/notificationRoutes.js"; //  notifications
 import inviteRoutes from "./routes/inviteRoutes.js"; //  invite email system
 
-dotenv.config(); // load .env variables
+
 
 const app = express(); // create express app
 
@@ -47,6 +48,7 @@ app.use("/invite", inviteRoutes); //  invite email routes
 app.get("/", (req, res) => {
   res.redirect("/auth"); //  redirect to login page
 });
+console.log("MAILGUN KEY:", process.env.MAILGUN_API_KEY);
 
 //  START SERVER
 app.listen(4000, () => {
