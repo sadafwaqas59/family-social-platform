@@ -1,21 +1,38 @@
-import Post from "../models/Post.js"; // import Post model
-import User from "../models/User.js"; // import User model
+import Post from "../models/Post.js"; // post model
+import User from "../models/User.js"; // user model
 
-const familyOnly = async (req, res, next) => { // middleware to restrict access to same family
-  const userId = req.session.userId; // get logged-in user ID from session
+const familyOnly = async (req, res, next) => {
+  try {
+    const userId = req.session.userId; // logged-in user
 
-  if (!userId) return res.redirect("/auth"); // if not logged in, redirect to login
+    if (!userId) return res.redirect("/auth"); // must login first
 
-  const user = await User.findById(userId); // fetch user from database
-  const post = await Post.findById(req.params.id); // fetch post using URL ID
+    const user = await User.findById(userId); // get user
+    if (!user) return res.redirect("/auth"); // safety check
 
-  if (!user || !post) return res.redirect("/auth"); // if user/post not found, redirect
+    const post = await Post.findById(req.params.id); // get post
+    if (!post) return res.send("Post not found "); // safety check
 
-  if (user.familyId.toString() !== post.familyId.toString()) { // check if both belong to same family
-    return res.send("Access denied "); // block access if not same family
+    // ❗ FIX: block only if user has no family
+    if (!user.familyId) {
+      return res.redirect("/family"); // user must join/create family
+    }
+
+    // ❗ FIX: block only if post has no family (bad data protection)
+    if (!post.familyId) {
+      return res.send("Post has no family "); // invalid post
+    }
+
+    // ✅ check same family
+    if (user.familyId.toString() !== post.familyId.toString()) {
+      return res.send("Access denied Not your family post"); // block access
+    }
+
+    next(); // allow request
+  } catch (err) {
+    console.log(err); // log error for debugging
+    res.send("Server error "); // safe fallback
   }
-
-  next(); // allow request to continue if authorized
 };
 
-export default familyOnly; // export middleware for use in routes
+export default familyOnly; // export middleware

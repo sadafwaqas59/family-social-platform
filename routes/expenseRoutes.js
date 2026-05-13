@@ -1,51 +1,86 @@
-import express from "express"; //  express
-import Expense from "../models/Expense.js"; //  expense model
-import familyOnly from "../middleware/familyOnly.js"; //  auth middleware
+import express from "express";
+// import express
 
-const router = express.Router(); //  router
+import Expense from "../models/Expense.js";
+// import expense model
 
-// GET EXPENSES (WITH USER SPLIT)
-router.get("/", familyOnly, async (req, res) => {
-  const expenses = await Expense.find({ familyId: req.user.familyId }); //  get all family expenses
+import User from "../models/User.js";
+// import user model
 
-  const myExpenses = expenses.filter(e => e.createdBy.toString() === req.user._id.toString()); // 👉 user expenses
-  const total = expenses.reduce((sum, e) => sum + e.amount, 0); // family total
+const router = express.Router();
+// create router
 
-  res.render("expenses", { expenses, myExpenses, total }); //  send data to UI
+
+
+// ================= EXPENSE PAGE =================
+router.get("/", async (req, res) => {
+
+  // must login
+  if (!req.session.userId) {
+
+    return res.redirect("/auth");
+  }
+
+  // logged user
+  const user = await User.findById(
+    req.session.userId
+  );
+
+  // get family expenses
+  const expenses = await Expense.find({
+
+    familyId: user.familyId
+
+  })
+  .populate("paidBy")
+  .sort({ createdAt: -1 });
+
+
+  // calculate total
+  const total = expenses.reduce(
+
+    (sum, expense) => sum + expense.amount,
+
+    0
+  );
+
+
+  // open page
+  res.render("expenses", {
+
+    expenses,
+
+    total
+  });
 });
 
-// CREATE EXPENSE
-router.post("/create", familyOnly, async (req, res) => {
+
+
+// ================= ADD EXPENSE =================
+router.post("/add", async (req, res) => {
+
+  // logged user
+  const user = await User.findById(
+    req.session.userId
+  );
+
+  // create expense
   await Expense.create({
-    title: req.body.title, // title
-    amount: req.body.amount, //  amount
-    familyId: req.user.familyId, // family
-    createdBy: req.user._id //  user
+
+    title: req.body.title,
+
+    amount: req.body.amount,
+
+    paidBy: user._id,
+
+    familyId: user.familyId
   });
 
-  res.redirect("/expenses"); //  redirect
+  // reload page
+  res.redirect("/expenses");
 });
 
-// EDIT PAGE
-router.get("/edit/:id", familyOnly, async (req, res) => {
-  const expense = await Expense.findById(req.params.id); // find expense
-  res.render("editExpense", { expense }); //  open edit page
-});
 
-// UPDATE EXPENSE
-router.post("/update/:id", familyOnly, async (req, res) => {
-  await Expense.findByIdAndUpdate(req.params.id, {
-    title: req.body.title, // update title
-    amount: req.body.amount // update amount
-  });
 
-  res.redirect("/expenses"); // redirect
-});
-
-// DELETE EXPENSE
-router.post("/delete/:id", familyOnly, async (req, res) => {
-  await Expense.findByIdAndDelete(req.params.id); // delete expense
-  res.redirect("/expenses"); // redirect
-});
-
-export default router; //  export router
+export default router;
+// export routes

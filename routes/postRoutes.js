@@ -1,96 +1,194 @@
-import express from "express"; // express router
-import Post from "../models/Post.js"; // post model
-import Family from "../models/Family.js"; // family model (optional use)
-import User from "../models/User.js"; // user model (needed)
-import multer from "multer"; // image upload
-import path from "path"; // file path
-import familyOnly from "../middleware/familyOnly.js"; // permission middleware
+import express from "express";
+// import express
 
-const router = express.Router(); // create router
+import multer from "multer";
+// import multer
 
-//  MULTER CONFIG 
+import Post from "../models/Post.js";
+// import post model
+
+import User from "../models/User.js";
+// import user model
+
+
+const router = express.Router();
+// create router
+
+
+
+// ================= MULTER CONFIG =================
 const storage = multer.diskStorage({
-  destination: "./public/uploads/", // folder to save images
+
+  // upload folder
+  destination: (req, file, cb) => {
+
+    cb(null, "public/uploads");
+  },
+
+  // unique filename
   filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname)); // unique filename
+
+    cb(
+      null,
+      Date.now() + "-" + file.originalname
+    );
   }
 });
+
 
 const upload = multer({
-  storage,
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith("image")) cb(null, true); // allow images only
-    else cb("Only images allowed!", false); // reject others
-  }
+  storage
 });
+// initialize multer
 
-// CREATE POST 
-router.post("/post/create", upload.single("image"), async (req, res) => {
-  const userId = req.session.userId; // logged-in user
 
-  if (!userId) return res.redirect("/auth"); // protect route
 
-  const user = await User.findById(userId); // get user
 
-  if (!user.familyId) return res.send("Join a family first ❗"); // must have family
+// ================= FEED PAGE =================
+router.get("/feed", async (req, res) => {
 
-  await Post.create({
-    userId,
-    familyId: user.familyId, // save family
-    content: req.body.content,
-    image: req.file ? "/uploads/" + req.file.filename : null,
-    likes: [],
-    comments: []
+  // must login
+  if (!req.session.userId) {
+
+    return res.redirect("/auth");
+  }
+
+  // logged user
+  const user = await User.findById(
+    req.session.userId
+  );
+
+  // get family posts
+  const posts = await Post.find({
+
+    familyId: user.familyId
+
+  })
+  .populate("userId")
+  .sort({ createdAt: -1 });
+
+  // render feed
+  res.render("feed", {
+
+    posts,
+
+    user
   });
-
-  res.redirect("/feed"); // go to feed
 });
+// ================= CREATE POST =================
+router.post(
+  "/post/create",
 
-//  LIKE POST 
-router.get("/post/like/:id", familyOnly, async (req, res) => {
-  const userId = req.session.userId; // user
+  upload.single("image"),
 
-  const post = await Post.findById(req.params.id); // find post
+  async (req, res) => {
 
-  if (!post.likes.includes(userId)) {
-    post.likes.push(userId); // add like
+    // login required
+    if (!req.session.userId) {
+
+      return res.redirect("/auth");
+    }
+
+    // logged user
+    const user = await User.findById(
+      req.session.userId
+    );
+
+    // safety check
+    if (!user) {
+
+      return res.redirect("/auth");
+    }
+
+    // must have family
+    if (!user.familyId) {
+
+      return res.send(
+        "Join family first ❌"
+      );
+    }
+
+    console.log(
+      "USER FAMILY:",
+      user.familyId
+    );
+    // debug family id
+
+
+    // create post
+    const newPost = await Post.create({
+
+      content: req.body.content,
+
+      image: req.file
+        ? "/uploads/" + req.file.filename
+        : "",
+
+      userId: user._id,
+
+      familyId: user.familyId,
+
+      likes: [],
+
+      comments: []
+    });
+
+    console.log(
+      "POST FAMILY:",
+      newPost.familyId
+    );
+    // debug post family id
+
+    res.redirect("/feed");
+  }
+);
+// ================= LIKE POST =================
+router.post("/post/like/:id", async (req, res) => {
+
+  // find post
+  const post = await Post.findById(
+    req.params.id
+  );
+
+  // avoid duplicate likes
+  if (!post.likes.includes(req.session.userId)) {
+
+    post.likes.push(req.session.userId);
+
+    await post.save();
   }
 
-  await post.save(); // save
-
-  res.redirect("/feed"); // reload
+  // reload page
+  res.redirect("/feed");
 });
 
-//  COMMENT 
-router.post("/post/comment/:id", familyOnly, async (req, res) => {
-  const userId = req.session.userId; // user
 
-  const post = await Post.findById(req.params.id); // find post
 
+
+// ================= COMMENT POST =================
+router.post("/post/comment/:id", async (req, res) => {
+
+  // find post
+  const post = await Post.findById(
+    req.params.id
+  );
+
+  // add comment
   post.comments.push({
-    userId,
-    text: req.body.text
+
+    text: req.body.text,
+
+    userId: req.session.userId
   });
 
-  await post.save(); // save
+  // save
+  await post.save();
 
-  res.redirect("/feed"); // reload
+  // reload page
+  res.redirect("/feed");
 });
 
-//  FEED
-router.get("/feed", async (req, res) => { //This route fetches and displays posts
-  const userId = req.session.userId; // user
 
-  if (!userId) return res.redirect("/auth"); // protect
 
-  const user = await User.findById(userId); // get user
-
-  const posts = await Post.find({ familyId: user.familyId }) // only family posts(privacy)
-    .populate("userId")
-    .populate("comments.userId")
-    .sort({ _id: -1 });
-
-  res.render("feed", { posts }); // render feed( Sends data to frontend (EJS page) to display posts)
-});
-
-export default router; // export router
+export default router;
+// export router

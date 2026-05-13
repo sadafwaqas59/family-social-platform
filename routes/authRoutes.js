@@ -30,15 +30,17 @@ router.post("/signup", async (req, res) => {
 
 // LOGIN (NO VERIFICATION CHECK)
 router.post("/login", async (req, res) => {
-  const { email, password } = req.body; // get login data
+  const { email, password } = req.body; // login data
 
   const user = await User.findOne({ email }); // find user
   if (!user) return res.send("User not found"); // check user
 
-  const match = await bcrypt.compare(password, user.password); // check password
+  const match = await bcrypt.compare(password, user.password); // verify password
   if (!match) return res.send("Wrong password"); // invalid password
 
   req.session.userId = user._id; // save session login
+
+  console.log("LOGIN SUCCESS USER ID:", req.session.userId); // 🔥 DEBUG
 
   res.redirect("/feed"); // go to feed
 });
