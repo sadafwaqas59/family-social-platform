@@ -1,69 +1,211 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <title>POSTS</title>
 
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<head>
+
+  <title>POSTS</title>
+  <!-- browser page title -->
+
+
+  <!-- bootstrap css -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  >
+
 
   <style>
-    body { background:#f0f2f5; } /* facebook bg */
-    .card { border-radius:12px; } /* smooth card */
-    .feed { max-width:600px; margin:auto; } /* center feed */
-    img { border-radius:10px; } /* rounded image */
+
+    body {
+      background:#f0f2f5;
+    }
+    /* facebook background */
+
+
+    .card {
+      border-radius:12px;
+    }
+    /* rounded cards */
+
+
+    .feed {
+      max-width:600px;
+      margin:auto;
+    }
+    /* center feed */
+
+
+    img {
+      border-radius:10px;
+    }
+    /* rounded images */
+
   </style>
+
 </head>
+
+
 
 <body>
 
+
 <div class="feed mt-4">
 
-  <!-- CREATE POST -->
+
+  <!-- ================= CREATE POST ================= -->
   <div class="card p-3 mb-3 shadow-sm">
-    <form method="POST" action="/post/create" enctype="multipart/form-data">
-      <input type="text" name="content" class="form-control mb-2" placeholder="What's on your mind?" required> <!-- text -->
-      <input type="file" name="image" class="form-control mb-2"> <!-- image -->
-      <button class="btn btn-primary w-100">Post</button> <!-- post btn -->
+
+    <form
+      method="POST"
+      action="/post/create"
+      enctype="multipart/form-data"
+    >
+
+      <!-- post text -->
+      <input
+        type="text"
+        name="content"
+        class="form-control mb-2"
+        placeholder="What's on your mind?"
+        required
+      >
+
+
+      <!-- upload image -->
+      <input
+        type="file"
+        name="image"
+        class="form-control mb-2"
+      >
+
+
+      <!-- submit button -->
+      <button class="btn btn-primary w-100">
+
+        Post
+
+      </button>
+
     </form>
+
   </div>
 
-  <!-- POSTS -->
+
+
+  <!-- ================= POSTS LOOP ================= -->
   <% posts.forEach(post => { %>
 
     <div class="card p-3 mb-3 shadow-sm">
 
-      <!-- USER -->
-      <strong><%= post.userId?.name %></strong>
 
-      <!-- CONTENT -->
-      <p><%= post.content %></p>
+      <!-- user name -->
+      <strong>
 
-      <!-- IMAGE -->
+        <%= post.userId?.name %>
+
+      </strong>
+
+
+      <!-- post text -->
+      <p>
+
+        <%= post.content %>
+
+      </p>
+
+
+
+      <!-- show image -->
       <% if (post.image) { %>
-        <img src="<%= post.image %>" class="img-fluid mb-2">
+
+        <img
+          src="<%= post.image %>"
+          class="img-fluid mb-2"
+        >
+
       <% } %>
 
-      <!-- LIKE -->
-      <a href="/post/like/<%= post._id %>" class="btn btn-light btn-sm">
-        👍 Like (<%= post.likes.length %>)
-      </a>
+
+
+      <!-- ================= LIKE BUTTON ================= -->
+      <form
+        method="POST"
+        action="/post/like/<%= post._id %>"
+      >
+
+        <button class="btn btn-light btn-sm">
+
+          👍 Like
+          (
+          <%= post.likes ? post.likes.length : 0 %>
+          )
+
+        </button>
+
+      </form>
+
+
 
       <hr>
 
-      <!-- COMMENTS -->
-      <% post.comments.forEach(c => { %>
-        <p><strong><%= c.userId?.name %>:</strong> <%= c.text %></p>
-      <% }) %>
 
-      <!-- ADD COMMENT -->
-      <form method="POST" action="/post/comment/<%= post._id %>">
-        <input type="text" name="text" class="form-control" placeholder="Write a comment..." required>
+
+      <!-- ================= COMMENTS LIST ================= -->
+      <% if (post.comments) { %>
+
+        <% post.comments.forEach(c => { %>
+
+          <p>
+
+            <strong>
+
+              <%= c.userId?.name || "User" %>:
+
+            </strong>
+
+            <%= c.text %>
+
+          </p>
+
+        <% }) %>
+
+      <% } %>
+
+
+
+      <!-- ================= ADD COMMENT ================= -->
+      <form
+        method="POST"
+        action="/post/comment/<%= post._id %>"
+      >
+
+        <!-- comment input -->
+        <input
+          type="text"
+          name="text"
+          class="form-control mb-2"
+          placeholder="Write a comment..."
+          required
+        >
+
+
+        <!-- comment button -->
+        <button class="btn btn-primary btn-sm w-100">
+
+          Comment
+
+        </button>
+
       </form>
+
 
     </div>
 
   <% }) %>
 
+
 </div>
+
 
 </body>
 </html>

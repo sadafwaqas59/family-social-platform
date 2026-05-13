@@ -1,50 +1,141 @@
-import express from "express"; // router
-import Family from "../models/Family.js"; // family model
-import User from "../models/User.js"; // user model
+import express from "express"; 
+// import express framework
 
-const router = express.Router(); // create router
+import Family from "../models/Family.js"; 
+// import family database model
 
-//  CREATE FAMILY 
+import User from "../models/User.js"; 
+// import user database model
+
+import mg from "../config/mailgun.js"; 
+// import mailgun email configuration
+
+const router = express.Router(); 
+// create express router
+
+// ================= CREATE FAMILY PAGE =================
+router.get("/family/create", (req, res) => {
+
+  // open create family page
+  res.render("createFamily");
+});
+
+
+// ================= CREATE FAMILY =================
 router.post("/family/create", async (req, res) => {
-  const { name } = req.body; // get family name
 
+  // logged user
+  const userId = req.session.userId;
+
+  // must login
+  if (!userId) {
+
+    return res.redirect("/auth");
+  }
+
+  // create family
   const family = await Family.create({
-    name,
-    createdBy: req.session.userId,
-    members: [req.session.userId] // creator is first member
+
+    name: req.body.name,
+
+    createdBy: userId,
+
+    members: [userId]
   });
 
-  await User.findByIdAndUpdate(req.session.userId, {
-    familyId: family._id // attach family to user
+  // connect family to user
+  await User.findByIdAndUpdate(userId, {
+    familyId: family._id
   });
 
-  res.redirect("/dashboard"); // go back
+  // go to feed
+  res.redirect("/feed");
 });
 
-// ADD MEMBER 
+
+// ================= ADD FAMILY MEMBER =================
 router.post("/family/add", async (req, res) => {
-  const { email } = req.body; // get member email
+  // route to add new family member
 
-  const user = await User.findOne({ email }); // find user
-  if (!user) return res.send("User not found");
 
-  const family = await Family.findOne({ members: req.session.userId }); // find current family
+  // logged in user
+  const currentUser = await User.findById(
+    req.session.userId
+  );
+  // find current logged-in user
 
-  family.members.push(user._id); // add member
-  await family.save(); // save changes
 
-  await User.findByIdAndUpdate(user._id, {
-    familyId: family._id // assign family to new member
+  // current family
+  const family = await Family.findById(
+    currentUser.familyId
+  );
+  // get logged user's family
+
+
+  // user to add
+  const member = await User.findOne({
+    email: req.body.email
   });
+  // find member using entered email
 
-  res.redirect("/family"); // reload page
+
+  // validation
+  if (!member) {
+    return res.send("User not found ❌");
+  }
+  // show error if email not exists
+
+
+  // avoid duplicates
+  if (!family.members.includes(member._id)) {
+    // check member already exists or not
+
+    family.members.push(member._id);
+    // add member id into family array
+
+    await family.save();
+    // save updated family
+  }
+
+
+  // connect user to family
+  member.familyId = family._id;
+  // assign family id to user
+
+  await member.save();
+  // save updated member
+
+
+  // ================= SEND INVITE EMAIL =================
+  await mg.messages.create(
+    // send email using mailgun
+
+    process.env.MAILGUN_DOMAIN,
+    // mailgun domain from .env
+
+    {
+
+      from: "Family App <mail@yourdomain.com>",
+      // sender email
+
+      to: [member.email],
+      // receiver email
+
+      subject: "Family Invitation",
+      // email subject
+
+      text: `Hello ${member.name},
+You were added to the family group.`
+      // email message
+    }
+  );
+
+
+  // redirect
+  res.redirect("/family");
+  // reload family page
 });
 
-//  VIEW FAMILY 
-router.get("/family", async (req, res) => {
-  const family = await Family.findOne({ members: req.session.userId }).populate("members"); // get family
 
-  res.render("family", { family }); // show page
-});
-
-export default router; // export router
+export default router; 
+// export router to use in index.js

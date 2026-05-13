@@ -1,116 +1,114 @@
 import express from "express";
-import multer from "multer";
-import Conversation from "../models/Conversation.js";
+// import express
+
 import Message from "../models/Message.js";
-import Typing from "../models/Typing.js";
+// import message model
+
+import User from "../models/User.js";
+// import user model
 
 const router = express.Router();
+// create router
 
-// Multer (image upload) 
-const storage = multer.diskStorage({
-  destination: "./public/uploads/",
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + "-" + file.originalname);
-  }
-});
-const upload = multer({ storage });
 
-//  Create / Get Conversation
-router.post("/conversation", async (req, res) => {
-  const { senderId, receiverId } = req.body;
 
-  let convo = await Conversation.findOne({
-    members: { $all: [senderId, receiverId] }
-  });
+// ================= CHAT PAGE =================
+router.get("/", async (req, res) => {
 
-  if (!convo) {
-    convo = new Conversation({ members: [senderId, receiverId] });
-    await convo.save();
+  // must login
+  if (!req.session.userId) {
+
+    return res.redirect("/auth");
   }
 
-  res.json(convo);
-});
+  // logged user
+  const user = await User.findById(
+    req.session.userId
+  );
 
-// Send Message 
-router.post("/send", upload.single("image"), async (req, res) => {
-  const { conversationId, sender, text, replyTo } = req.body;
+  // safety check
+  if (!user) {
 
-  const msg = new Message({
-    conversationId,
-    sender,
-    text,
-    replyTo,
-    image: req.file ? req.file.filename : null
-  });
+    return res.redirect("/auth");
+  }
 
-  await msg.save();
+  console.log(
+    "USER FAMILY:",
+    user.familyId
+  );
+  // debug family id
 
-  await Conversation.findByIdAndUpdate(conversationId, {
-    lastMessage: text || "📷 Image",
-    updatedAt: Date.now()
-  });
 
-  res.json(msg);
-});
-
-// Get Messages 
-router.get("/:conversationId", async (req, res) => {
+  // get family messages
   const messages = await Message.find({
-    conversationId: req.params.conversationId
+
+    familyId: user.familyId
+
   })
-    .populate("sender", "name profilePic") // get sender name + image
-    .populate({
-      path: "replyTo",
-      populate: { path: "sender", select: "name" } // reply sender name
-    })
-    .sort({ createdAt: 1 });
+  .populate("sender")
+  .sort({ createdAt: 1 });
 
-  res.json(messages);
-});
+  console.log(messages);
+  // debug messages
 
-//  Delete Message
-router.delete("/:messageId", async (req, res) => {
-  await Message.findByIdAndUpdate(req.params.messageId, {
-    deleted: true
+
+  // render page
+  res.render("chat", {
+
+    messages,
+
+    user
   });
-
-  res.json({ message: "Deleted" });
 });
 
-//  Mark Seen
-router.put("/seen/:conversationId/:userId", async (req, res) => {
-  await Message.updateMany(
-    {
-      conversationId: req.params.conversationId,
-      sender: { $ne: req.params.userId }
-    },
-    { seen: true }
+
+
+// ================= SEND MESSAGE =================
+router.post("/send", async (req, res) => {
+
+  // must login
+  if (!req.session.userId) {
+
+    return res.redirect("/auth");
+  }
+
+  // logged user
+  const user = await User.findById(
+    req.session.userId
   );
 
-  res.json({ message: "Seen updated" });
-});
+  // safety check
+  if (!user) {
 
-//  Typing 
-router.post("/typing", async (req, res) => {
-  const { conversationId, userId, isTyping } = req.body;
+    return res.redirect("/auth");
+  }
 
-  await Typing.findOneAndUpdate(
-    { conversationId, userId },
-    { isTyping, updatedAt: Date.now() },
-    { upsert: true }
+  console.log(
+    "SENDING FAMILY:",
+    user.familyId
   );
+  // debug family id
 
-  res.json({ status: "typing" });
-});
 
-//  Get Typing 
-router.get("/typing/:conversationId", async (req, res) => {
-  const users = await Typing.find({
-    conversationId: req.params.conversationId,
-    isTyping: true
+  // create message
+  const newMessage = await Message.create({
+
+    sender: user._id,
+
+    familyId: user.familyId,
+
+    text: req.body.text
   });
 
-  res.json(users);
+  console.log(newMessage);
+  // debug message
+
+
+  // reload chat
+  res.redirect("/messages");
 });
+
+
 
 export default router;
+// export router
