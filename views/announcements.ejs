@@ -1,0 +1,44 @@
+<h1>Family Announcements</h1>
+
+<form action="/announcements/create" method="POST">
+
+  <input
+    type="text"
+    name="title"
+    placeholder="Title"
+    required
+  >
+
+  <textarea
+    name="message"
+    placeholder="Announcement..."
+    required
+  ></textarea>
+
+  <button>
+
+    Post Announcement
+
+  </button>
+
+</form>
+
+
+<hr>
+
+
+<% announcements.forEach(a => { %>
+
+  <div>
+
+    <h3>
+      <%= a.title %>
+    </h3>
+
+    <p>
+      <%= a.message %>
+    </p>
+
+  </div>
+
+<% }) %>

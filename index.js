@@ -9,6 +9,7 @@ import postRoutes from "./routes/postRoutes.js"; // post system routes
 import messageRoutes from "./routes/messageRoutes.js"; // chat system routes
 import notificationRoutes from "./routes/notificationRoutes.js"; // notifications routes
 import inviteRoutes from "./routes/inviteRoutes.js"; // invite system routes
+import announcementRoutes from "./routes/announcementRoutes.js";
 
 
 const app = express(); // create express app instance
@@ -60,6 +61,7 @@ app.use("/messages", messageRoutes); // messaging system
 app.use("/notifications", notificationRoutes); // notifications system
 app.use("/invite", inviteRoutes); // invite system
 app.use("/expenses", expenseRoutes);// expense system routes
+app.use("/announcements", announcementRoutes);
 
 
 // ================= DEFAULT ROUTE =================

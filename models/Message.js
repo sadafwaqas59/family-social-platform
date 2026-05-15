@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+// import mongoose
 
 const messageSchema = new mongoose.Schema({
 
@@ -6,13 +7,16 @@ const messageSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "User"
   },
+  // who sent message
 
-  familyId: {
+  receiver: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Family"
+    ref: "User"
   },
+  // who receives message
 
   text: String
+  // message text
 
 }, { timestamps: true });
 
@@ -20,3 +24,4 @@ export default mongoose.model(
   "Message",
   messageSchema
 );
+// export model
