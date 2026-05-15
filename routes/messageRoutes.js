@@ -2,110 +2,170 @@ import express from "express";
 // import express
 
 import Message from "../models/Message.js";
-// import message model
+// message model
 
 import User from "../models/User.js";
-// import user model
+// user model
 
 const router = express.Router();
-// create router
 
 
 
-// ================= CHAT PAGE =================
+// ================= FAMILY MEMBERS PAGE =================
 router.get("/", async (req, res) => {
 
-  // must login
-  if (!req.session.userId) {
+  try {
 
-    return res.redirect("/auth");
+    // must login
+    if (!req.session.userId) {
+
+      return res.redirect("/auth");
+    }
+
+    // current user
+    const currentUser = await User.findById(
+      req.session.userId
+    );
+
+    // get family members except self
+    const familyUsers = await User.find({
+
+      familyId: currentUser.familyId,
+
+      _id: { $ne: currentUser._id }
+    });
+
+    // open members page
+    res.render("members", {
+
+      familyUsers
+    });
+
+  } catch (err) {
+
+    console.log(err);
+
+    res.send("Members page error ❌");
   }
+});
 
-  // logged user
-  const user = await User.findById(
-    req.session.userId
-  );
 
-  // safety check
-  if (!user) {
 
-    return res.redirect("/auth");
+// ================= PRIVATE CHAT PAGE =================
+router.get("/:id", async (req, res) => {
+
+  try {
+
+    // must login
+    if (!req.session.userId) {
+
+      return res.redirect("/auth");
+    }
+
+    // logged user
+    const currentUser = await User.findById(
+      req.session.userId
+    );
+
+    // receiver user
+    const otherUser = await User.findById(
+      req.params.id
+    );
+
+    // safety check
+    if (!otherUser) {
+
+      return res.send(
+        "Receiver user not found ❌"
+      );
+    }
+
+    // get private messages
+    const messages = await Message.find({
+
+      $or: [
+
+        {
+          sender: currentUser._id,
+          receiver: otherUser._id
+        },
+
+        {
+          sender: otherUser._id,
+          receiver: currentUser._id
+        }
+
+      ]
+
+    })
+    .populate("sender")
+    .sort({ createdAt: 1 });
+
+    // open chat page
+    res.render("chat", {
+
+      messages,
+
+      currentUser,
+
+      otherUser
+    });
+
+  } catch (err) {
+
+    console.log(err);
+
+    res.send("Chat error ❌");
   }
-
-  console.log(
-    "USER FAMILY:",
-    user.familyId
-  );
-  // debug family id
-
-
-  // get family messages
-  const messages = await Message.find({
-
-    familyId: user.familyId
-
-  })
-  .populate("sender")
-  .sort({ createdAt: 1 });
-
-  console.log(messages);
-  // debug messages
-
-
-  // render page
-  res.render("chat", {
-
-    messages,
-
-    user
-  });
 });
 
 
 
 // ================= SEND MESSAGE =================
-router.post("/send", async (req, res) => {
+router.post("/send/:id", async (req, res) => {
 
-  // must login
-  if (!req.session.userId) {
+  try {
 
-    return res.redirect("/auth");
+    // current user
+    const currentUser = await User.findById(
+      req.session.userId
+    );
+
+    // receiver user
+    const otherUser = await User.findById(
+      req.params.id
+    );
+
+    // safety check
+    if (!otherUser) {
+
+      return res.send(
+        "Receiver not found ❌"
+      );
+    }
+
+    // save message
+    await Message.create({
+
+      sender: currentUser._id,
+
+      receiver: otherUser._id,
+
+      text: req.body.text
+    });
+
+    // reload same chat
+    res.redirect(
+
+      `/messages/${otherUser._id}`
+    );
+
+  } catch (err) {
+
+    console.log(err);
+
+    res.send("Message send error ❌");
   }
-
-  // logged user
-  const user = await User.findById(
-    req.session.userId
-  );
-
-  // safety check
-  if (!user) {
-
-    return res.redirect("/auth");
-  }
-
-  console.log(
-    "SENDING FAMILY:",
-    user.familyId
-  );
-  // debug family id
-
-
-  // create message
-  const newMessage = await Message.create({
-
-    sender: user._id,
-
-    familyId: user.familyId,
-
-    text: req.body.text
-  });
-
-  console.log(newMessage);
-  // debug message
-
-
-  // reload chat
-  res.redirect("/messages");
 });
 
 

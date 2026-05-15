@@ -1,16 +1,18 @@
 import mongoose from "mongoose";
 
-// announcement schema
 const announcementSchema = new mongoose.Schema({
 
-  // announcement text
-  text: String,
+  title: String,
+  // announcement title
 
-  // family visibility
+  message: String,
+  // announcement text
+
   familyId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Family"
   }
+  // family visibility
 
 }, { timestamps: true });
 
