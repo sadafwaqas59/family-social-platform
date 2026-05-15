@@ -1,35 +1,99 @@
+<!-- ================= views/notifications.ejs ================= -->
+
 <!DOCTYPE html>
 <html>
+
 <head>
+
   <title>Notifications</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"> <!-- bootstrap -->
+
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  >
+
 </head>
 
-<body class="container mt-4"> <!-- container -->
+<body class="bg-light">
 
-<h2>🔔 Notifications</h2> <!-- heading -->
+<div class="container mt-4">
 
-<ul class="list-group mt-3">
-  <% notifications.forEach(n => { %> <!-- loop -->
+  <h1>Notifications</h1>
 
-  <li class="list-group-item d-flex justify-content-between 
-    <%= n.isRead ? '' : 'list-group-item-warning' %>"> <!-- highlight unread -->
 
-    <div>
-      <%= n.message %><br> <!-- show message -->
-      <small><%= n.createdAt.toDateString() %></small> <!-- show date -->
+  <!-- create notification -->
+  <form
+    action="/notifications/create"
+    method="POST"
+    class="mb-4"
+  >
+
+    <input
+      type="text"
+      name="text"
+      class="form-control mb-2"
+      placeholder="Write notification..."
+      required
+    >
+
+    <button class="btn btn-primary">
+
+      Send Notification
+
+    </button>
+
+  </form>
+
+
+
+  <!-- notifications loop -->
+  <% notifications.forEach(notification => { %>
+
+    <div class="card p-3 mb-2">
+
+      <h5>
+
+        <%= notification.text %>
+
+      </h5>
+
+      <small>
+
+        <%= notification.createdAt.toDateString() %>
+
+      </small>
+
+
+      <!-- unread -->
+      <% if (!notification.isRead) { %>
+
+        <a
+          href="/notifications/read/<%= notification._id %>"
+          class="btn btn-success btn-sm mt-2"
+        >
+
+          Mark as Read
+
+        </a>
+
+      <% } else { %>
+
+        <button
+          class="btn btn-secondary btn-sm mt-2"
+        >
+
+          Read
+
+        </button>
+
+      <% } %>
+
     </div>
 
-    <% if (!n.isRead) { %> <!-- if unread -->
-      <form action="/notifications/read/<%= n._id %>" method="POST">
-        <button class="btn btn-success btn-sm">Mark Read</button> <!-- button -->
-      </form>
-    <% } %>
-
-  </li>
-
   <% }) %>
-</ul>
+
+
+</div>
 
 </body>
 </html>
