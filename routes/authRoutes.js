@@ -1,6 +1,7 @@
 import express from "express"; // import express
 import bcrypt from "bcryptjs"; // password hashing
 import User from "../models/User.js"; // user model
+import {registerValidator,validate} from "../validators/auth.Validator.js";
 
 const router = express.Router(); // create router
 
@@ -48,5 +49,7 @@ router.get("/logout", (req, res) => {
   req.session.destroy(); // destroy session
   res.redirect("/auth"); // back to auth page
 });
+router.post("/register",registerValidator,validate,async (req, res) => {res.send("User Registered ✅"); }
+);
 
 export default router; // export router

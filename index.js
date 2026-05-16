@@ -3,16 +3,13 @@ import express from "express"; //  import express framework
 import session from "express-session"; //  import session for login system
 
 import connectDB from "./config/db.js"; //  import database connection
-
 import authRoutes from "./routes/authRoutes.js"; //  auth routes (login/signup)
 import familyRoutes from "./routes/familyRoutes.js"; //  family module
 import postRoutes from "./routes/postRoutes.js"; //  posts module
 import messageRoutes from "./routes/messageRoutes.js"; //  messaging module
 import notificationRoutes from "./routes/notificationRoutes.js"; //  notifications
 import inviteRoutes from "./routes/inviteRoutes.js"; //  invite email system
-
-
-
+import errorHandler from "./middleware/errorHandler.js";
 const app = express(); // create express app
 
 //  CONNECT DATABASE
@@ -49,7 +46,7 @@ app.get("/", (req, res) => {
   res.redirect("/auth"); //  redirect to login page
 });
 console.log("MAILGUN KEY:", process.env.MAILGUN_API_KEY);
-
+app.use(errorHandler);
 //  START SERVER
 app.listen(4000, () => {
   console.log("Server running on http://localhost:4000"); //  server start log
