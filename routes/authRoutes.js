@@ -1,7 +1,8 @@
 import express from "express"; // import express
 import bcrypt from "bcryptjs"; // password hashing
 import User from "../models/User.js"; // user model
-
+import {registerValidator,validate} from "../validators/auth.Validator.js";
+import {registerUser} from "../controllers/authController.js";
 const router = express.Router(); // create router
 
 // AUTH PAGE (login + signup)
