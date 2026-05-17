@@ -50,5 +50,10 @@ router.get("/logout", (req, res) => {
   req.session.destroy(); // destroy session
   res.redirect("/auth"); // back to auth page
 });
-
+router.post(
+  "/register",
+  registerValidator,
+  validate,
+  registerUser
+);
 export default router; // export router
